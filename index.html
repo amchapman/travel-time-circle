@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      * {
+				padding: 0;
+				margin: 0
+			}
+      html, body { 
+      	height: 100%; 
+      	width: 100%; 
+      }
+      #sideBar { 
+      	height: 100%; 
+      	width: 300px; 
+      	float: left; 
+      	padding: 5px;
+      }
+      #map { 
+      	height: 100%; 
+				margin-left: 310px;
+      	padding: 5px;
+      }
+			hr {
+				margin-top: 10px;
+				margin-bottom: 10px;
+			}
+			ol {
+        margin-top: 10px;
+        font-size: 13px;
+				font-family: Verdana, Sans-serif;
+				padding-left: 25px;
+			}
+			dl {
+				overflow: hidden;
+        margin-top: 10px;
+        font-size: 13px;
+				font-family: Verdana, Sans-serif;
+			}
+			dt {
+				float: left;
+				width: 20%;
+			}
+			dd {
+				float: left;
+				width: 80%;
+			}
+      input,select { 
+        font-size: 13px;
+				font-family: Verdana, Sans-serif;
+				width: 100%;
+      }
+      h1, h2, h3 {
+        margin-top: 10px;
+        margin-bottom: 2px;
+        font-size: 13px;
+				font-family: Verdana, Sans-serif;
+				font-weight: bold;
+			}
+			progress {
+			  visibility: hidden;
+				width: 100%;
+				height: 20px;
+			}
+ 			input[type="submit"]:disabled {
+ 				background-color: grey;
+			}
+			input[type="submit"] {
+        margin-top: 3px;
+			  background-color: blue;
+			  color: white;
+			  -moz-border-radius: 18px;
+  			border-radius: 5px;
+			}
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js"></script>
+    <script>
+    
+    // TODO register for a map key and change URL to use it
+    // TODO improve pickBest to smooth out black point curves
+    // TODO consider improving resolution by using two sets of 25 points
+    // TODO replace alert boxes
+    // TODO add button next to address field for picking current location
+      var map;
+      var iterationTotal;
+      var iteration;
+      var points = 25;
+      var durationTarget;
+      var allPaths = [], allMarkers = [];
+      var origin;
+      var distances, durations, traveldist;
+      var service = new google.maps.DistanceMatrixService;
+      var delay;
+      var failures = 0;
+      var distanceStart, distanceMin, distanceMax;
+      var debugPoint = 4;
+      var originMarker;
+      var travelMode;
+      var minDiff;
+      
+      function createArray(a, b) {
+        var x = new Array(a);
+        for (var i = 0; i < a; i++) {
+          x[i] = new Array(b);
+        }
+        return x;
+      }
+      
+      function drawMap() {
+				disableButtons(true);
+        var address = document.getElementById('address').value;
+        durationTarget = 60 * document.getElementById('duration').value; // seconds
+        var travelModeTxt = document.getElementById('mode').value;
+        iterationTotal = document.getElementById('iterations').value;
+        if (address == "") {
+          alert("Enter a valid address");
+				  disableButtons(false);
+				  return false;
+				}        
+        if (durationTarget == 0) {
+          alert("Enter a valid travel time in minutes");
+				  disableButtons(false);
+				  return false;
+				}        
+        iteration = 1;
+        showProgress(0, iterationTotal);
+        failures = 0;
+        delay = 1000;
+        switch(travelModeTxt) {
+					case "WALKING":
+  		      distanceMin = 0.5 * durationTarget / 3600;
+  		      distanceStart = 2.5 * durationTarget / 3600; 
+  		      distanceMax = 5 * durationTarget / 3600;
+  		      travelMode = google.maps.TravelMode.WALKING;
+        		minDiff = 0.25 * durationTarget;
+        		if (minDiff < 900) minDiff = 900;
+						break;
+					case "BICYCLING":
+  		      distanceMin = 1 * durationTarget / 3600;
+  		      distanceStart = 5 * durationTarget / 3600; 
+  		      distanceMax = 15 * durationTarget / 3600;
+  		      travelMode = google.maps.TravelMode.BICYCLING;
+        		minDiff = 0.25 * durationTarget;
+        		if (minDiff < 600) minDiff = 600;
+						break;
+					case "TRANSIT":
+  		      distanceMin = 3 * durationTarget / 3600;
+  		      distanceStart = 15 * durationTarget / 3600; 
+  		      distanceMax = 100 * durationTarget / 3600;
+  		      travelMode = google.maps.TravelMode.TRANSIT;
+        		minDiff = 0.5 * durationTarget;
+        		if (minDiff < 1800) minDiff = 1800;
+						break;   
+					default: // DRIVING
+  		      distanceMin = 10 * durationTarget / 3600;
+  		      distanceStart = 55 * durationTarget / 3600; 
+  		      distanceMax = 100 * durationTarget / 3600;
+  		      travelMode = google.maps.TravelMode.DRIVING;
+        		minDiff = 0.1 * durationTarget;
+        		if (minDiff < 300) minDiff = 300;
+				}
+        distances = createArray(25, 25);
+        durations = createArray(25, 25);
+        traveldist = createArray(25, 25);
+        geocoder = new google.maps.Geocoder();
+        geocoder.geocode({
+          'address': address
+        }, function(results, status) {
+          if (status == google.maps.GeocoderStatus.OK) {
+            if (!map) {
+              var mapCanvas = document.getElementById('map');
+              var mapOptions = {
+                center: results[0].geometry.location,
+                zoom: 7,
+                mapTypeId: google.maps.MapTypeId.ROADMAP
+              };
+              map = new google.maps.Map(mapCanvas, mapOptions);
+            } else {
+              map.setCenter(results[0].geometry.location);
+            }
+            origin = {lat: results[0].geometry.location.lat(), lng: results[0].geometry.location.lng()};
+            originMarker = new google.maps.Marker({
+              position: results[0].geometry.location,
+              map: map,
+              icon: {
+								path: google.maps.SymbolPath.CIRCLE,
+								scale: 3,
+								strokeColor: "#FF0000",
+							},
+              title: address
+            });
+            allMarkers.push(originMarker);
+            for (var i=0; i<points; i++) {
+              distances[0][i] = 0;
+              durations[0][i] = 0;
+              distances[1][i] = distanceStart;
+              durations[1][i] = 0;
+            }
+//            drawBoundary("#00FF00"); //green - start
+            improveBoundary();
+          } else {
+            alert('Google did not recognize the address you entered [' + status + ']');
+					  disableButtons(false);
+          }
+        });
+        return false;
+      }
+      
+      // use map.fitBounds to zoom the map to fit the boundary
+      function zoomMap() {
+        var boundaryCoordinates = calculateBoundary();
+        var bounds = new google.maps.LatLngBounds();
+        for (var i=0; i<points; i++) {
+          bounds.extend(
+            new google.maps.LatLng(boundaryCoordinates[i].lat, 
+                                   boundaryCoordinates[i].lng)
+                       );
+        }
+        map.fitBounds(bounds);
+      }
+      
+      function drawMarkers(boundaryCoordinates) {
+        var duration, distance;
+        var color, title;
+        for (i=0; i<points; i++) {
+          if (iteration>1) {
+            duration = asMins(durations[iteration][i]);
+            distance = Math.round(100*distances[iteration][i])/100;
+          } else {
+            duration = "unknown";
+            distance = "unknown";
+          }
+          if (durations[iteration][i]==0) {
+            color = "#000000";
+            title = 'Unable to find (@' + i + ')';
+          } else {
+            color = "#00FF00";
+            title = 'Direct-Distance=' + distance + ' mi' + 
+            				' Travel-Distance=' + traveldist[iteration][i] +
+            				' Travel-Time=' + duration + ' mins' + 
+            				' (@' + i + ')';
+          }
+          var marker = new google.maps.Marker({
+              position: {lat: boundaryCoordinates[i].lat, lng: boundaryCoordinates[i].lng},
+              map: map,
+              icon: {
+								path: google.maps.SymbolPath.CIRCLE,
+								scale: 3,
+								strokeColor: color,
+							},
+              title: title
+            });
+          allMarkers.push(marker);
+        }
+      }
+      
+      function asMins(sec) {
+        return Math.round(100*sec/60)/100;
+      }
+      
+      function drawBoundary(color) {
+        var boundaryCoordinates = calculateBoundary();
+        boundaryCoordinates.push(boundaryCoordinates[0]); // complete the loop
+        var boundaryPath = new google.maps.Polyline({
+          path: boundaryCoordinates,
+          geodesic: true,
+          strokeColor: color,
+          strokeOpacity: 1.0,
+          strokeWeight: 5
+        });
+        boundaryPath.setMap(map);        
+        allPaths.push(boundaryPath);
+        drawMarkers(boundaryCoordinates);
+      }
+      
+      // Calculate destination based on distance (in miles) and bearing (in radians)
+      // clockwise from North. Based on haversine formula:
+      //  http://www.movable-type.co.uk/scripts/latlong.html
+      function calculateDestination(origin, distance, bearing) {
+        var earthRadius = 3959;
+        var lat = origin.lat * Math.PI / 180;
+        var lng = origin.lng * Math.PI / 180;
+        var destLat = Math.asin( Math.sin(lat) * Math.cos(distance/earthRadius) +
+                                 Math.cos(lat) * Math.sin(distance/earthRadius) * 
+                                 Math.cos(bearing) );
+        var destLng = lng + Math.atan2( Math.sin(bearing) * 
+                                        Math.sin(distance/earthRadius) * Math.cos(lat),
+                                        Math.cos(distance/earthRadius) - Math.sin(lat) *
+                                        Math.sin(destLat) );
+        return {lat: destLat * 180 / Math.PI, lng: destLng * 180 / Math.PI};
+      }      
+      
+      function calculateBoundary() {
+        var boundaryCoordinates =[];
+        var bearing, distance;
+        for (var i=0; i<points; i++) {
+          bearing = i * 2 * Math.PI/points
+          distance = distances[iteration][i];
+          boundaryCoordinates.push(calculateDestination(origin, distance, bearing));
+        }
+        return boundaryCoordinates;
+      }
+      
+      function improveBoundary() {
+        var boundaryCoordinates = calculateBoundary();
+        service.getDistanceMatrix({
+          origins: [origin],
+          destinations: boundaryCoordinates,
+          travelMode: travelMode,
+          unitSystem: google.maps.UnitSystem.IMPERIAL,
+          avoidHighways: false,
+          avoidTolls: false
+        },function (response, status) {
+          if (status !== google.maps.DistanceMatrixStatus.OK) {
+            debug("Error: " + status + " Failures:" + failures + " Delay:" + delay);
+            if (failures++ < 3) setTimeout(improveBoundary, (delay+=1000));
+            if (failures >= 3) {
+              alert('Error calculating distances: ' + status);
+							disableButtons(false);
+						}
+          } else {
+            var results = response.rows[0].elements;
+            for (var i = 0; i < results.length; i++) {
+              if (results[i].status == google.maps.DistanceMatrixStatus.OK) {
+              	traveldist[iteration][i] = results[i].distance.text;
+                durations[iteration][i] = results[i].duration.value;
+                estimateDistance(i);
+                if (i==debugPoint) {
+									debug("I:"+iteration+" P:"+i+
+											 " D:" + Math.round(distances[iteration][i]*10)/10  + 
+											 " T:" + Math.round(10 * durations[iteration][i] / 60)/10);
+								}
+              } else {
+								guessDistance(i);
+                if (i==debugPoint) {
+                  debug("I:"+iteration+" P:"+i+
+											 " D:" + Math.round(distances[iteration][i]*10)/10  + 
+											 " FAIL<br/>");
+								}
+              }
+            }
+						showProgress(iteration, iterationTotal);
+            iteration++;
+            if (iteration > iterationTotal) {
+            	showProgress(1,1);
+              pickBest();
+              drawBoundary("#FF0000"); //red - final
+              zoomMap();
+              reportDiscrepancy();
+              hideProgress();
+							disableButtons(false);
+            } else {
+//              drawBoundary("#00FFFF");
+//              improveBoundary();
+              setTimeout(improveBoundary, delay);
+            }
+          }
+        });
+      }
+      
+      function pickBest() {
+        var diff, bestDiff;
+        var fix=distanceStart;
+				for (var i=0; i<points; i++) {
+				  durations[iteration][i] = 0;
+				  distances[iteration][i] = distances[iteration][1]
+				  bestDiff = 999999;
+				  for (var j=0; j<iteration; j++) {
+				    if (durations[j][i] > 0) {
+				      diff = Math.abs(durationTarget - durations[j][i]);
+				      if ((diff < bestDiff) && (diff <= minDiff)) {
+								traveldist[iteration][i] = traveldist[j][i];
+								durations[iteration][i] = durations[j][i];
+								distances[iteration][i] = distances[j][i];	
+								bestDiff = diff;
+				      }
+				    }
+				  }
+				}
+				for (var i=0; i<points; i++) {
+					if (durations[iteration][i] != 0) {
+					  fix = distances[iteration][i];
+					  break;
+					}
+				}
+				for (var i=0; i<points; i++) {
+					if (durations[iteration][i] != 0) fix = distances[iteration][i];
+					if (durations[iteration][i] == 0) distances[iteration][i] = fix;
+				}
+      }
+      
+      function guessDistance(i) {
+        minMaxGuessor(i);
+      }
+      
+      // if the last distance check failed then we have no knew data on
+      // which to pick the next point, so we just have to guess. If we
+      // don't have any points above the target and we haven't tried the
+      // max yet, then try max. If we don't have any points below the 
+      // target and we haven't tried min yet, then try min.
+      function minMaxGuessor(i) {
+        var above = -1, aboveDiff = -1;
+        var below = -1, belowDiff = -1;
+        var aboveHit = false, belowHit = false;
+        var minHit = false, maxHit = false;
+        var diff;
+        var X = -1;
+        for (var j=1; j<=iteration; j++) {
+          if (distances[j][i] == distanceMax) maxHit = true;
+          if (distances[j][i] == distanceMin) minHit = true;
+          if (durations[j][i] > 0) {
+            diff = durationTarget - durations[j][i];
+            if (diff > 0) {
+              if (!belowHit || (diff < belowDiff)) {
+                belowDiff = diff;
+                below = distances[j][i];
+              }
+              belowHit = true;
+            }
+            if (diff < 0) {
+              if (!aboveHit || (diff > aboveDiff)) {
+                aboveDiff = -1 * diff;
+                above = distances[j][i];
+              }
+              aboveHit = true;
+            }
+          }
+        }
+        if (!aboveHit && !maxHit) X = distanceMax;
+        if (!belowHit && !minHit) X = distanceMin;
+        if (!aboveHit && !belowHit && maxHit && minHit)
+          X = (iteration / iterationTotal) * (distanceMax - distanceMin) + distanceMin;
+        if (X==-1) {
+          if (!aboveHit) X = below * 1.1;
+          if (!belowHit) X = above * 0.9;
+          if (aboveHit && belowHit) X = (iteration / iterationTotal) * (above - below) + below;
+        }
+        distances[iteration+1][i] = X;
+      }    
+      
+      function estimateDistance(i) {
+				aboveBelowEstimator(i);
+      }
+      
+			// find the latest point above and the latest point below the target
+			// then connect them and pick where they cross the target
+			// if we can't find a point above the line then pick the max
+			// if we connect the points and it comes out below min or above max
+			// then limit it to min, max
+      function aboveBelowEstimator(i) {
+        // (X1, Y1) above and (X2, Y2) below
+        var X1=-1, X2=0, X3=-1, Y1=0, Y2=-1, Y3=durationTarget;
+        var minHit = false, maxHit = false;
+        for (var j=1; j<=iteration; j++) {
+          if (distances[j][i] == distanceMin) minHit = true;
+          if (distances[j][i] == distanceMax) maxHit = true;
+          if (durations[j][i] > 0) {
+            if (durations[j][i] > Y3) {
+     		      X1 = distances[j][i]; Y1 = durations[j][i];
+     		    } else {
+     		      X2 = distances[j][i]; Y2 = durations[j][i];
+     		    }
+          }
+        }
+        if (X1 == -1 && !maxHit) X3 = distanceMax;
+        if (X3 == -1) X3 = (X1 * (Y3 - Y2) - X2 * (Y3 - Y1)) / (Y1 - Y2);
+        if (X3 < distanceMin) X3 = distanceMin;
+        if (X3 > distanceMax) X3 = distanceMax;
+        distances[iteration+1][i] = X3;
+      }
+      
+     function reportDiscrepancy() {
+        var totalDev = 0, maxDev = 0, minDev = 9999, dev, maxPoint = -1, MSE = 0;
+        var goodPoints = 0;
+        for (var i=0; i < points; i++) {
+          if (durations[iteration][i]!=0) {
+            goodPoints++;
+						dev = Math.abs(durationTarget - durations[iteration][i]);
+						totalDev += dev;
+						MSE += dev * dev;
+						if (dev > maxDev) { maxDev = dev; maxPoint = i }
+						if (dev < minDev) minDev = dev;
+          }
+        }
+        console.log("Deviation MSE=" + Math.round(MSE/3600) + 
+        						" RMSE=" + Math.round(Math.sqrt(MSE/3600)*100)/100 + 
+        					  " avg=" + asMins(totalDev/goodPoints) + 
+                    " max=" + asMins(maxDev) + " (" + maxPoint + ")" + 
+                    " min=" + asMins(minDev));
+        // Deviation avg=2.12 max=14.25 (7) min=0
+        var title = originMarker.getTitle();
+        originMarker.setTitle(title + " (mean absolute error=" + asMins(totalDev/goodPoints) + " minutes)");
+      }
+      
+      function showProgress(value, max) {
+        var progressBar = document.getElementById('progress-bar');
+        progressBar.max = max;
+        progressBar.value = value;
+//         progressBar.style.display = 'block';
+      	document.getElementById('progress-bar').style.visibility = 'visible';
+      }
+      
+      function hideProgress() {
+//       	document.getElementById('progress-bar').style.display = 'none';
+      	document.getElementById('progress-bar').style.visibility = 'hidden';
+      }
+      
+      function debug(message) {
+        console.log(message);
+      }
+      
+      function disableButtons(bool) {
+				document.getElementById('draw-map').disabled=bool;
+				document.getElementById('clear-map').disabled=bool;
+      }
+      
+      function clearMap() {
+        for (i=0; i<allPaths.length; i++) {
+          allPaths[i].setMap(null);
+        }
+        for (i=0; i<allMarkers.length; i++) {
+          allMarkers[i].setMap(null);
+        }
+        allPaths = [];
+        allMarkers = [];
+        return false;
+      }
+      
+//      google.maps.event.addDomListener(window, 'load', drawMap);
+    </script>
+  </head>
+  <body>
+    <div id="sideBar">
+		<h1>How far can I travel in...?</h1>
+		<ol>
+		<li>Enter the starting street address</li>
+		<li>Enter how many minutes you will travel</li>
+		<li>Select how you will travel (e.g. Driving)</li>
+		<li>Click the "Draw Map" button</li>
+		<li>After a few seconds a red boundary will appear on the map which represents
+				approximately the area you can travel to in that number of minutes</li>
+		</ol>
+		<hr/>
+    <form>
+      <h3>Address</h3>
+			<input type="text" id="address" placeholder="e.g. Washington, DC" autofocus/>
+      <h3>Travel Time (minutes)</h3>
+	    <input type="text" id="duration" placeholder="e.g. 120"/>
+      <h3>Mode of Travel</h3>
+			<select id="mode">
+				<option value="DRIVING" selected="selected">Driving</option>
+				<option value="WALKING">Walking</option>
+				<option value="BICYCLING">Bicycling</option>
+				<option value="TRANSIT">Transit</option>
+			</select>
+      <h3>Accuracy</h3>
+			<select id="iterations">
+				<option value="3">approximate (fast)</option>
+				<option value="5" selected="selected">normal</option>
+				<option value="7">more accurate (slower)</option>
+				<option value="9">most accurate (very slow)</option>
+			</select>
+			<input type="submit" id="draw-map" onclick="return drawMap();" value="Draw Map"/>
+			<input type="submit" id="clear-map" onclick="return clearMap();" value="Clear Map"/>
+    </form>
+    <progress id="progress-bar"></progress>
+    <hr/>
+    <h2>Key to circle markers on map</h2>
+    <dl>
+    <dt>red</dt>
+    <dd>starting address</dd>
+    <dt>green</dt>
+    <dd>a reachable destination</dd>
+    <dt>black</dt>
+    <dd>no destination could be found at this bearing and close to the desired travel time</dd>
+    </dl>
+    </div>
+    <div id="map"></div>
+  </body>
+</html>
