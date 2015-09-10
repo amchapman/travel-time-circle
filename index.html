@@ -3,75 +3,75 @@
   <head>
     <style>
       * {
-				padding: 0;
-				margin: 0
-			}
+        padding: 0;
+        margin: 0
+      }
       html, body { 
-      	height: 100%; 
-      	width: 100%; 
+        height: 100%; 
+        width: 100%; 
       }
       #sideBar { 
-      	height: 100%; 
-      	width: 300px; 
-      	float: left; 
-      	padding: 5px;
+        height: 100%; 
+        width: 300px; 
+        float: left; 
+        padding: 5px;
       }
       #map { 
-      	height: 100%; 
-				margin-left: 310px;
-      	padding: 5px;
+        height: 100%; 
+        margin-left: 310px;
+        padding: 5px;
       }
-			hr {
-				margin-top: 10px;
-				margin-bottom: 10px;
-			}
-			ol {
+      hr {
+        margin-top: 10px;
+        margin-bottom: 10px;
+      }
+      ol {
         margin-top: 10px;
         font-size: 13px;
-				font-family: Verdana, Sans-serif;
-				padding-left: 25px;
-			}
-			dl {
-				overflow: hidden;
+        font-family: Verdana, Sans-serif;
+        padding-left: 25px;
+      }
+      dl {
+        overflow: hidden;
         margin-top: 10px;
         font-size: 13px;
-				font-family: Verdana, Sans-serif;
-			}
-			dt {
-				float: left;
-				width: 20%;
-			}
-			dd {
-				float: left;
-				width: 80%;
-			}
+        font-family: Verdana, Sans-serif;
+      }
+      dt {
+        float: left;
+        width: 20%;
+      }
+      dd {
+        float: left;
+        width: 80%;
+      }
       input,select { 
         font-size: 13px;
-				font-family: Verdana, Sans-serif;
-				width: 100%;
+        font-family: Verdana, Sans-serif;
+        width: 100%;
       }
       h1, h2, h3 {
         margin-top: 10px;
         margin-bottom: 2px;
         font-size: 13px;
-				font-family: Verdana, Sans-serif;
-				font-weight: bold;
-			}
-			progress {
-			  visibility: hidden;
-				width: 100%;
-				height: 20px;
-			}
- 			input[type="submit"]:disabled {
- 				background-color: grey;
-			}
-			input[type="submit"] {
+        font-family: Verdana, Sans-serif;
+        font-weight: bold;
+      }
+      progress {
+        visibility: hidden;
+        width: 100%;
+        height: 20px;
+      }
+      input[type="submit"]:disabled {
+        background-color: grey;
+      }
+      input[type="submit"] {
         margin-top: 3px;
-			  background-color: blue;
-			  color: white;
-			  -moz-border-radius: 18px;
-  			border-radius: 5px;
-			}
+        background-color: blue;
+        color: white;
+        -moz-border-radius: 18px;
+        border-radius: 5px;
+      }
     </style>
     <script src="https://maps.googleapis.com/maps/api/js"></script>
     <script>
@@ -102,58 +102,58 @@
       }
       
       function drawMap() {
-				disableButtons(true);
+        disableButtons(true);
         var address = document.getElementById('address').value;
         durationTarget = 60 * document.getElementById('duration').value; // seconds
         var travelModeTxt = document.getElementById('mode').value;
         iterationTotal = document.getElementById('iterations').value;
         if (address == "") {
           alert("Enter a valid address");
-				  disableButtons(false);
-				  return false;
-				}        
+          disableButtons(false);
+          return false;
+        }        
         if (durationTarget == 0) {
           alert("Enter a valid travel time in minutes");
-				  disableButtons(false);
-				  return false;
-				}        
+          disableButtons(false);
+          return false;
+        }        
         iteration = 1;
         showProgress(0, iterationTotal);
         failures = 0;
         delay = 1000;
         switch(travelModeTxt) {
-					case "WALKING":
-  		      distanceMin = 0.5 * durationTarget / 3600;
-  		      distanceStart = 2.5 * durationTarget / 3600; 
-  		      distanceMax = 5 * durationTarget / 3600;
-  		      travelMode = google.maps.TravelMode.WALKING;
-        		minDiff = 0.25 * durationTarget;
-        		if (minDiff < 900) minDiff = 900;
-						break;
-					case "BICYCLING":
-  		      distanceMin = 1 * durationTarget / 3600;
-  		      distanceStart = 5 * durationTarget / 3600; 
-  		      distanceMax = 15 * durationTarget / 3600;
-  		      travelMode = google.maps.TravelMode.BICYCLING;
-        		minDiff = 0.25 * durationTarget;
-        		if (minDiff < 600) minDiff = 600;
-						break;
-					case "TRANSIT":
-  		      distanceMin = 3 * durationTarget / 3600;
-  		      distanceStart = 15 * durationTarget / 3600; 
-  		      distanceMax = 100 * durationTarget / 3600;
-  		      travelMode = google.maps.TravelMode.TRANSIT;
-        		minDiff = 0.5 * durationTarget;
-        		if (minDiff < 1800) minDiff = 1800;
-						break;   
-					default: // DRIVING
-  		      distanceMin = 10 * durationTarget / 3600;
-  		      distanceStart = 55 * durationTarget / 3600; 
-  		      distanceMax = 100 * durationTarget / 3600;
-  		      travelMode = google.maps.TravelMode.DRIVING;
-        		minDiff = 0.1 * durationTarget;
-        		if (minDiff < 300) minDiff = 300;
-				}
+          case "WALKING":
+            distanceMin = 0.5 * durationTarget / 3600;
+            distanceStart = 2.5 * durationTarget / 3600; 
+            distanceMax = 5 * durationTarget / 3600;
+            travelMode = google.maps.TravelMode.WALKING;
+            minDiff = 0.25 * durationTarget;
+            if (minDiff < 900) minDiff = 900;
+            break;
+          case "BICYCLING":
+            distanceMin = 1 * durationTarget / 3600;
+            distanceStart = 5 * durationTarget / 3600; 
+            distanceMax = 15 * durationTarget / 3600;
+            travelMode = google.maps.TravelMode.BICYCLING;
+            minDiff = 0.25 * durationTarget;
+            if (minDiff < 600) minDiff = 600;
+            break;
+          case "TRANSIT":
+            distanceMin = 3 * durationTarget / 3600;
+            distanceStart = 15 * durationTarget / 3600; 
+            distanceMax = 100 * durationTarget / 3600;
+            travelMode = google.maps.TravelMode.TRANSIT;
+            minDiff = 0.5 * durationTarget;
+            if (minDiff < 1800) minDiff = 1800;
+            break;   
+          default: // DRIVING
+            distanceMin = 10 * durationTarget / 3600;
+            distanceStart = 55 * durationTarget / 3600; 
+            distanceMax = 100 * durationTarget / 3600;
+            travelMode = google.maps.TravelMode.DRIVING;
+            minDiff = 0.1 * durationTarget;
+            if (minDiff < 300) minDiff = 300;
+        }
         distances = createArray(25, 25);
         durations = createArray(25, 25);
         traveldist = createArray(25, 25);
@@ -178,10 +178,10 @@
               position: results[0].geometry.location,
               map: map,
               icon: {
-								path: google.maps.SymbolPath.CIRCLE,
-								scale: 3,
-								strokeColor: "#FF0000",
-							},
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 3,
+                strokeColor: "#FF0000",
+              },
               title: address
             });
             allMarkers.push(originMarker);
@@ -195,7 +195,7 @@
             improveBoundary();
           } else {
             alert('Google did not recognize the address you entered [' + status + ']');
-					  disableButtons(false);
+            disableButtons(false);
           }
         });
         return false;
@@ -231,18 +231,18 @@
           } else {
             color = "#00FF00";
             title = 'Direct-Distance=' + distance + ' mi' + 
-            				' Travel-Distance=' + traveldist[iteration][i] +
-            				' Travel-Time=' + duration + ' mins' + 
-            				' (@' + i + ')';
+                    ' Travel-Distance=' + traveldist[iteration][i] +
+                    ' Travel-Time=' + duration + ' mins' + 
+                    ' (@' + i + ')';
           }
           var marker = new google.maps.Marker({
               position: {lat: boundaryCoordinates[i].lat, lng: boundaryCoordinates[i].lng},
               map: map,
               icon: {
-								path: google.maps.SymbolPath.CIRCLE,
-								scale: 3,
-								strokeColor: color,
-							},
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 3,
+                strokeColor: color,
+              },
               title: title
             });
           allMarkers.push(marker);
@@ -311,39 +311,39 @@
             if (failures++ < 3) setTimeout(improveBoundary, (delay+=1000));
             if (failures >= 3) {
               alert('Error calculating distances: ' + status);
-							disableButtons(false);
-						}
+              disableButtons(false);
+            }
           } else {
             var results = response.rows[0].elements;
             for (var i = 0; i < results.length; i++) {
               if (results[i].status == google.maps.DistanceMatrixStatus.OK) {
-              	traveldist[iteration][i] = results[i].distance.text;
+                traveldist[iteration][i] = results[i].distance.text;
                 durations[iteration][i] = results[i].duration.value;
                 estimateDistance(i);
                 if (i==debugPoint) {
-									debug("I:"+iteration+" P:"+i+
-											 " D:" + Math.round(distances[iteration][i]*10)/10  + 
-											 " T:" + Math.round(10 * durations[iteration][i] / 60)/10);
-								}
+                  debug("I:"+iteration+" P:"+i+
+                       " D:" + Math.round(distances[iteration][i]*10)/10  + 
+                       " T:" + Math.round(10 * durations[iteration][i] / 60)/10);
+                }
               } else {
-								guessDistance(i);
+                guessDistance(i);
                 if (i==debugPoint) {
                   debug("I:"+iteration+" P:"+i+
-											 " D:" + Math.round(distances[iteration][i]*10)/10  + 
-											 " FAIL<br/>");
-								}
+                       " D:" + Math.round(distances[iteration][i]*10)/10  + 
+                       " FAIL<br/>");
+                }
               }
             }
-						showProgress(iteration, iterationTotal);
+            showProgress(iteration, iterationTotal);
             iteration++;
             if (iteration > iterationTotal) {
-            	showProgress(1,1);
+              showProgress(1,1);
               pickBest();
               drawBoundary("#FF0000"); //red - final
               zoomMap();
               reportDiscrepancy();
               hideProgress();
-							disableButtons(false);
+              disableButtons(false);
             } else {
 //              drawBoundary("#00FFFF");
 //              improveBoundary();
@@ -356,32 +356,32 @@
       function pickBest() {
         var diff, bestDiff;
         var fix=distanceStart;
-				for (var i=0; i<points; i++) {
-				  durations[iteration][i] = 0;
-				  distances[iteration][i] = distances[iteration][1]
-				  bestDiff = 999999;
-				  for (var j=0; j<iteration; j++) {
-				    if (durations[j][i] > 0) {
-				      diff = Math.abs(durationTarget - durations[j][i]);
-				      if ((diff < bestDiff) && (diff <= minDiff)) {
-								traveldist[iteration][i] = traveldist[j][i];
-								durations[iteration][i] = durations[j][i];
-								distances[iteration][i] = distances[j][i];	
-								bestDiff = diff;
-				      }
-				    }
-				  }
-				}
-				for (var i=0; i<points; i++) {
-					if (durations[iteration][i] != 0) {
-					  fix = distances[iteration][i];
-					  break;
-					}
-				}
-				for (var i=0; i<points; i++) {
-					if (durations[iteration][i] != 0) fix = distances[iteration][i];
-					if (durations[iteration][i] == 0) distances[iteration][i] = fix;
-				}
+        for (var i=0; i<points; i++) {
+          durations[iteration][i] = 0;
+          distances[iteration][i] = distances[iteration][1]
+          bestDiff = 999999;
+          for (var j=0; j<iteration; j++) {
+            if (durations[j][i] > 0) {
+              diff = Math.abs(durationTarget - durations[j][i]);
+              if ((diff < bestDiff) && (diff <= minDiff)) {
+                traveldist[iteration][i] = traveldist[j][i];
+                durations[iteration][i] = durations[j][i];
+                distances[iteration][i] = distances[j][i];  
+                bestDiff = diff;
+              }
+            }
+          }
+        }
+        for (var i=0; i<points; i++) {
+          if (durations[iteration][i] != 0) {
+            fix = distances[iteration][i];
+            break;
+          }
+        }
+        for (var i=0; i<points; i++) {
+          if (durations[iteration][i] != 0) fix = distances[iteration][i];
+          if (durations[iteration][i] == 0) distances[iteration][i] = fix;
+        }
       }
       
       function guessDistance(i) {
@@ -434,14 +434,14 @@
       }    
       
       function estimateDistance(i) {
-				aboveBelowEstimator(i);
+        aboveBelowEstimator(i);
       }
       
-			// find the latest point above and the latest point below the target
-			// then connect them and pick where they cross the target
-			// if we can't find a point above the line then pick the max
-			// if we connect the points and it comes out below min or above max
-			// then limit it to min, max
+      // find the latest point above and the latest point below the target
+      // then connect them and pick where they cross the target
+      // if we can't find a point above the line then pick the max
+      // if we connect the points and it comes out below min or above max
+      // then limit it to min, max
       function aboveBelowEstimator(i) {
         // (X1, Y1) above and (X2, Y2) below
         var X1=-1, X2=0, X3=-1, Y1=0, Y2=-1, Y3=durationTarget;
@@ -451,10 +451,10 @@
           if (distances[j][i] == distanceMax) maxHit = true;
           if (durations[j][i] > 0) {
             if (durations[j][i] > Y3) {
-     		      X1 = distances[j][i]; Y1 = durations[j][i];
-     		    } else {
-     		      X2 = distances[j][i]; Y2 = durations[j][i];
-     		    }
+              X1 = distances[j][i]; Y1 = durations[j][i];
+            } else {
+              X2 = distances[j][i]; Y2 = durations[j][i];
+            }
           }
         }
         if (X1 == -1 && !maxHit) X3 = distanceMax;
@@ -470,16 +470,16 @@
         for (var i=0; i < points; i++) {
           if (durations[iteration][i]!=0) {
             goodPoints++;
-						dev = Math.abs(durationTarget - durations[iteration][i]);
-						totalDev += dev;
-						MSE += dev * dev;
-						if (dev > maxDev) { maxDev = dev; maxPoint = i }
-						if (dev < minDev) minDev = dev;
+            dev = Math.abs(durationTarget - durations[iteration][i]);
+            totalDev += dev;
+            MSE += dev * dev;
+            if (dev > maxDev) { maxDev = dev; maxPoint = i }
+            if (dev < minDev) minDev = dev;
           }
         }
         console.log("Deviation MSE=" + Math.round(MSE/3600) + 
-        						" RMSE=" + Math.round(Math.sqrt(MSE/3600)*100)/100 + 
-        					  " avg=" + asMins(totalDev/goodPoints) + 
+                    " RMSE=" + Math.round(Math.sqrt(MSE/3600)*100)/100 + 
+                    " avg=" + asMins(totalDev/goodPoints) + 
                     " max=" + asMins(maxDev) + " (" + maxPoint + ")" + 
                     " min=" + asMins(minDev));
         // Deviation avg=2.12 max=14.25 (7) min=0
@@ -492,12 +492,12 @@
         progressBar.max = max;
         progressBar.value = value;
 //         progressBar.style.display = 'block';
-      	document.getElementById('progress-bar').style.visibility = 'visible';
+        document.getElementById('progress-bar').style.visibility = 'visible';
       }
       
       function hideProgress() {
-//       	document.getElementById('progress-bar').style.display = 'none';
-      	document.getElementById('progress-bar').style.visibility = 'hidden';
+//        document.getElementById('progress-bar').style.display = 'none';
+        document.getElementById('progress-bar').style.visibility = 'hidden';
       }
       
       function debug(message) {
@@ -505,8 +505,8 @@
       }
       
       function disableButtons(bool) {
-				document.getElementById('draw-map').disabled=bool;
-				document.getElementById('clear-map').disabled=bool;
+        document.getElementById('draw-map').disabled=bool;
+        document.getElementById('clear-map').disabled=bool;
       }
       
       function clearMap() {
@@ -526,37 +526,37 @@
   </head>
   <body>
     <div id="sideBar">
-		<h1>How far can I travel in...?</h1>
-		<ol>
-		<li>Enter the starting street address</li>
-		<li>Enter how many minutes you will travel</li>
-		<li>Select how you will travel (e.g. Driving)</li>
-		<li>Click the "Draw Map" button</li>
-		<li>After a few seconds a red boundary will appear on the map which represents
-				approximately the area you can travel to in that number of minutes</li>
-		</ol>
-		<hr/>
+    <h1>How far can I travel in...?</h1>
+    <ol>
+    <li>Enter the starting street address</li>
+    <li>Enter how many minutes you will travel</li>
+    <li>Select how you will travel (e.g. Driving)</li>
+    <li>Click the "Draw Map" button</li>
+    <li>After a few seconds a red boundary will appear on the map which represents
+        approximately the area you can travel to in that number of minutes</li>
+    </ol>
+    <hr/>
     <form>
       <h3>Address</h3>
-			<input type="text" id="address" placeholder="e.g. Washington, DC" autofocus/>
+      <input type="text" id="address" placeholder="e.g. Washington, DC" autofocus/>
       <h3>Travel Time (minutes)</h3>
-	    <input type="text" id="duration" placeholder="e.g. 120"/>
+      <input type="text" id="duration" placeholder="e.g. 120"/>
       <h3>Mode of Travel</h3>
-			<select id="mode">
-				<option value="DRIVING" selected="selected">Driving</option>
-				<option value="WALKING">Walking</option>
-				<option value="BICYCLING">Bicycling</option>
-				<option value="TRANSIT">Transit</option>
-			</select>
+      <select id="mode">
+        <option value="DRIVING" selected="selected">Driving</option>
+        <option value="WALKING">Walking</option>
+        <option value="BICYCLING">Bicycling</option>
+        <option value="TRANSIT">Transit</option>
+      </select>
       <h3>Accuracy</h3>
-			<select id="iterations">
-				<option value="3">approximate (fast)</option>
-				<option value="5" selected="selected">normal</option>
-				<option value="7">more accurate (slower)</option>
-				<option value="9">most accurate (very slow)</option>
-			</select>
-			<input type="submit" id="draw-map" onclick="return drawMap();" value="Draw Map"/>
-			<input type="submit" id="clear-map" onclick="return clearMap();" value="Clear Map"/>
+      <select id="iterations">
+        <option value="3">approximate (fast)</option>
+        <option value="5" selected="selected">normal</option>
+        <option value="7">more accurate (slower)</option>
+        <option value="9">most accurate (very slow)</option>
+      </select>
+      <input type="submit" id="draw-map" onclick="return drawMap();" value="Draw Map"/>
+      <input type="submit" id="clear-map" onclick="return clearMap();" value="Clear Map"/>
     </form>
     <progress id="progress-bar"></progress>
     <hr/>
