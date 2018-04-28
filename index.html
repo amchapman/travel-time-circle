@@ -3,20 +3,20 @@
   <head>
     <script src="https://maps.googleapis.com/maps/api/js"></script>
     <script>
-    
+
 //    Copyright 2015 Alexander Chapman
-// 
+//
 //    Licensed under the Apache License, Version 2.0 (the "License");
 //    you may not use this file except in compliance with the License.
 //    You may obtain a copy of the License at
-// 
+//
 //        http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 //    Unless required by applicable law or agreed to in writing, software
 //    distributed under the License is distributed on an "AS IS" BASIS,
 //    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //    See the License for the specific language governing permissions and
-    
+
       var map;
       var iterationTotal;
       var iteration;
@@ -33,7 +33,7 @@
       var originMarker;
       var travelMode;
       var minDiff;
-      
+
       function createArray(a, b) {
         var x = new Array(a);
         for (var i = 0; i < a; i++) {
@@ -41,7 +41,7 @@
         }
         return x;
       }
-      
+
       function drawMap() {
         disableButtons(true);
         var address = document.getElementById('address').value;
@@ -52,12 +52,12 @@
           alert("Enter a valid address");
           disableButtons(false);
           return false;
-        }        
+        }
         if (durationTarget == 0) {
           alert("Enter a valid travel time in minutes");
           disableButtons(false);
           return false;
-        }        
+        }
         iteration = 1;
         showProgress(0, iterationTotal);
         failures = 0;
@@ -65,7 +65,7 @@
         switch(travelModeTxt) {
           case "WALKING":
             distanceMin = 0.5 * durationTarget / 3600;
-            distanceStart = 2.5 * durationTarget / 3600; 
+            distanceStart = 2.5 * durationTarget / 3600;
             distanceMax = 5 * durationTarget / 3600;
             travelMode = google.maps.TravelMode.WALKING;
             minDiff = 0.25 * durationTarget;
@@ -73,7 +73,7 @@
             break;
           case "BICYCLING":
             distanceMin = 1 * durationTarget / 3600;
-            distanceStart = 5 * durationTarget / 3600; 
+            distanceStart = 5 * durationTarget / 3600;
             distanceMax = 15 * durationTarget / 3600;
             travelMode = google.maps.TravelMode.BICYCLING;
             minDiff = 0.25 * durationTarget;
@@ -81,15 +81,15 @@
             break;
           case "TRANSIT":
             distanceMin = 3 * durationTarget / 3600;
-            distanceStart = 15 * durationTarget / 3600; 
+            distanceStart = 15 * durationTarget / 3600;
             distanceMax = 100 * durationTarget / 3600;
             travelMode = google.maps.TravelMode.TRANSIT;
             minDiff = 0.5 * durationTarget;
             if (minDiff < 1800) minDiff = 1800;
-            break;   
+            break;
           default: // DRIVING
             distanceMin = 10 * durationTarget / 3600;
-            distanceStart = 55 * durationTarget / 3600; 
+            distanceStart = 55 * durationTarget / 3600;
             distanceMax = 100 * durationTarget / 3600;
             travelMode = google.maps.TravelMode.DRIVING;
             minDiff = 0.1 * durationTarget;
@@ -140,19 +140,19 @@
         });
         return false;
       }
-      
+
       function zoomMap() {
         var boundaryCoordinates = calculateBoundary();
         var bounds = new google.maps.LatLngBounds();
         for (var i=0; i<points; i++) {
           bounds.extend(
-            new google.maps.LatLng(boundaryCoordinates[i].lat, 
+            new google.maps.LatLng(boundaryCoordinates[i].lat,
                                    boundaryCoordinates[i].lng)
                        );
         }
         map.fitBounds(bounds);
       }
-      
+
       function drawMarkers(boundaryCoordinates) {
         var duration, distance;
         var color, title;
@@ -169,9 +169,9 @@
             title = 'Unable to find (@' + i + ')';
           } else {
             color = "#00FF00";
-            title = 'Direct-Distance=' + distance + ' mi' + 
+            title = 'Direct-Distance=' + distance + ' mi' +
                     ' Travel-Distance=' + traveldist[iteration][i] +
-                    ' Travel-Time=' + duration + ' mins' + 
+                    ' Travel-Time=' + duration + ' mins' +
                     ' (@' + i + ')';
           }
           var marker = new google.maps.Marker({
@@ -187,11 +187,11 @@
           allMarkers.push(marker);
         }
       }
-      
+
       function asMins(sec) {
         return Math.round(100*sec/60)/100;
       }
-      
+
       function drawBoundary(color) {
         var boundaryCoordinates = calculateBoundary();
         boundaryCoordinates.push(boundaryCoordinates[0]); // complete the loop
@@ -202,11 +202,18 @@
           strokeOpacity: 1.0,
           strokeWeight: 5
         });
-        boundaryPath.setMap(map);        
+        boundaryPath.setMap(map);
         allPaths.push(boundaryPath);
         drawMarkers(boundaryCoordinates);
+        var kml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><kml xmlns=\"http://www.opengis.net/kml/2.2\">\n";
+        kml += "<Document><Placemark><name>Travel Area</name><Polygon><outerBoundaryIs><LinearRing><coordinates>\n";
+        for (var i=0; i<boundaryCoordinates.length; i++)
+          kml += boundaryCoordinates[i].lng + "," + boundaryCoordinates[i].lat + ",0\n";
+        kml += "</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark></Document></kml>";
+        var kmlBox = document.getElementById("kmlBox");
+        kmlBox.value = kml;
       }
-      
+
       // Calculate destination based on distance (in miles) and bearing (in radians)
       // clockwise from North. Based on haversine formula:
       //  http://www.movable-type.co.uk/scripts/latlong.html
@@ -215,15 +222,15 @@
         var lat = origin.lat * Math.PI / 180;
         var lng = origin.lng * Math.PI / 180;
         var destLat = Math.asin( Math.sin(lat) * Math.cos(distance/earthRadius) +
-                                 Math.cos(lat) * Math.sin(distance/earthRadius) * 
+                                 Math.cos(lat) * Math.sin(distance/earthRadius) *
                                  Math.cos(bearing) );
-        var destLng = lng + Math.atan2( Math.sin(bearing) * 
+        var destLng = lng + Math.atan2( Math.sin(bearing) *
                                         Math.sin(distance/earthRadius) * Math.cos(lat),
                                         Math.cos(distance/earthRadius) - Math.sin(lat) *
                                         Math.sin(destLat) );
         return {lat: destLat * 180 / Math.PI, lng: destLng * 180 / Math.PI};
-      }      
-      
+      }
+
       function calculateBoundary() {
         var boundaryCoordinates =[];
         var bearing, distance;
@@ -234,7 +241,7 @@
         }
         return boundaryCoordinates;
       }
-      
+
       function improveBoundary() {
         var boundaryCoordinates = calculateBoundary();
         service.getDistanceMatrix({
@@ -261,14 +268,14 @@
                 estimateDistance(i);
                 if (i==debugPoint) {
                   debug("I:"+iteration+" P:"+i+
-                       " D:" + Math.round(distances[iteration][i]*10)/10  + 
+                       " D:" + Math.round(distances[iteration][i]*10)/10  +
                        " T:" + Math.round(10 * durations[iteration][i] / 60)/10);
                 }
               } else {
                 guessDistance(i);
                 if (i==debugPoint) {
                   debug("I:"+iteration+" P:"+i+
-                       " D:" + Math.round(distances[iteration][i]*10)/10  + 
+                       " D:" + Math.round(distances[iteration][i]*10)/10  +
                        " FAIL<br/>");
                 }
               }
@@ -289,7 +296,7 @@
           }
         });
       }
-      
+
       function pickBest() {
         var diff, bestDiff;
         var fix=distanceStart;
@@ -303,7 +310,7 @@
               if ((diff < bestDiff) && (diff <= minDiff)) {
                 traveldist[iteration][i] = traveldist[j][i];
                 durations[iteration][i] = durations[j][i];
-                distances[iteration][i] = distances[j][i];  
+                distances[iteration][i] = distances[j][i];
                 bestDiff = diff;
               }
             }
@@ -320,15 +327,15 @@
           if (durations[iteration][i] == 0) distances[iteration][i] = fix;
         }
       }
-      
+
       function guessDistance(i) {
         minMaxGuessor(i);
       }
-      
+
       // if the last distance check failed then we have no knew data on
       // which to pick the next point, so we just have to guess. If we
       // don't have any points above the target and we haven't tried the
-      // max yet, then try max. If we don't have any points below the 
+      // max yet, then try max. If we don't have any points below the
       // target and we haven't tried min yet, then try min.
       function minMaxGuessor(i) {
         var above = -1, aboveDiff = -1;
@@ -368,12 +375,12 @@
           if (aboveHit && belowHit) X = (iteration / iterationTotal) * (above - below) + below;
         }
         distances[iteration+1][i] = X;
-      }    
-      
+      }
+
       function estimateDistance(i) {
         aboveBelowEstimator(i);
       }
-      
+
       // find the latest point above and the latest point below the target
       // then connect them and pick where they cross the target
       // if we can't find a point above the line then pick the max
@@ -400,7 +407,7 @@
         if (X3 > distanceMax) X3 = distanceMax;
         distances[iteration+1][i] = X3;
       }
-      
+
      function reportDiscrepancy() {
         var totalDev = 0, maxDev = 0, minDev = 9999, dev, maxPoint = -1, MSE = 0;
         var goodPoints = 0;
@@ -414,36 +421,36 @@
             if (dev < minDev) minDev = dev;
           }
         }
-        console.log("Deviation MSE=" + Math.round(MSE/3600) + 
-                    " RMSE=" + Math.round(Math.sqrt(MSE/3600)*100)/100 + 
-                    " avg=" + asMins(totalDev/goodPoints) + 
-                    " max=" + asMins(maxDev) + " (" + maxPoint + ")" + 
+        console.log("Deviation MSE=" + Math.round(MSE/3600) +
+                    " RMSE=" + Math.round(Math.sqrt(MSE/3600)*100)/100 +
+                    " avg=" + asMins(totalDev/goodPoints) +
+                    " max=" + asMins(maxDev) + " (" + maxPoint + ")" +
                     " min=" + asMins(minDev));
         // Deviation avg=2.12 max=14.25 (7) min=0
         var title = originMarker.getTitle();
         originMarker.setTitle(title + " (mean absolute error=" + asMins(totalDev/goodPoints) + " minutes)");
       }
-      
+
       function showProgress(value, max) {
         var progressBar = document.getElementById('progress-bar');
         progressBar.max = max;
         progressBar.value = value;
         document.getElementById('progress-bar').style.visibility = 'visible';
       }
-      
+
       function hideProgress() {
         document.getElementById('progress-bar').style.visibility = 'hidden';
       }
-      
+
       function debug(message) {
         console.log(message);
       }
-      
+
       function disableButtons(bool) {
         document.getElementById('draw-map').disabled=bool;
         document.getElementById('clear-map').disabled=bool;
       }
-      
+
       function clearMap() {
         for (i=0; i<allPaths.length; i++) {
           allPaths[i].setMap(null);
@@ -455,25 +462,25 @@
         allMarkers = [];
         return false;
       }
-      
+
     </script>
     <style>
       * {
         padding: 0;
         margin: 0
       }
-      html, body { 
-        height: 100%; 
-        width: 100%; 
+      html, body {
+        height: 100%;
+        width: 100%;
       }
-      #sideBar { 
-        height: 100%; 
-        width: 300px; 
-        float: left; 
+      #sideBar {
+        height: 100%;
+        width: 300px;
+        float: left;
         padding: 5px;
       }
-      #map { 
-        height: 100%; 
+      #map {
+        height: 100%;
         margin-left: 310px;
         padding: 5px;
       }
@@ -501,7 +508,7 @@
         float: left;
         width: 80%;
       }
-      input,select { 
+      input,select {
         font-size: 13px;
         font-family: Verdana, Sans-serif;
         width: 100%;
@@ -533,6 +540,10 @@
         color: white;
         -moz-border-radius: 18px;
         border-radius: 5px;
+      }
+      textarea {
+	      width: 100%;
+	      height: 180px;
       }
     </style>
   </head>
@@ -583,6 +594,10 @@
     </dl>
     <p><a href="http://www.gadgetsappshacks.com/2015/09/how-to-draw-travel-time-boundary-on.html">
     Read an article about this service</a></p>
+    <hr/>
+    <h2>KML</h2>
+    <textarea id="kmlBox">
+    </textarea>
     </div>
     <div id="map"></div>
   </body>
